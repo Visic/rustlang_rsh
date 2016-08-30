@@ -1,7 +1,7 @@
 use std::io::prelude::*;
 use std::io;
 use std::process::{Command, Stdio};
-use std::net::{TcpListener, TcpStream, SocketAddr};
+use std::net::{TcpListener, TcpStream, SocketAddr, Shutdown};
 use std::str;
 use std::thread;
 use std::thread::{JoinHandle};
@@ -13,9 +13,13 @@ fn handle_outstream_async<F: Read + std::marker::Send + 'static, T: Write + std:
         loop {
             let finish = match from.read(&mut buffer) { //read some
                 Ok(amount_read) => {
-                    match to.write_all(&buffer[..amount_read]) { //successfully read, echo it to [to]
-                        Ok(_) => to.flush().is_err(), //successfully echo'd, flush [to]
-                        Err(_) => true,
+                    if amount_read > 0 { 
+                        match to.write_all(&buffer[..amount_read]) { //successfully read, echo it to [to]
+                            Ok(_) => to.flush().is_err(), //successfully echo'd, flush [to]
+                            Err(_) => true,
+                        }
+                    } else {
+                        true
                     }
                 },
                 Err(_) => true
@@ -29,8 +33,17 @@ fn handle_instream_async<F: Read + std::marker::Send + 'static, T: Write + std::
     thread::spawn(move || {
         let mut buffer: [u8; 256] = [0; 256];
         loop {
-            let finish = match from.read(&mut buffer) {
-                Ok(amount_read) => to.write_all(&buffer[..amount_read]).is_err(),
+            let finish = match from.read(&mut buffer) { //read some
+                Ok(amount_read) => { 
+                    if amount_read > 0 {
+                        match to.write_all(&buffer[..amount_read]) { //successfully read, echo it to [to]
+                            Ok(_) => to.flush().is_err(), //successfully echo'd, flush [to]
+                            Err(_) => true
+                        }
+                    } else {
+                        true
+                    }
+                },
                 Err(_) => true
             };
             if finish { break; }
@@ -56,10 +69,13 @@ fn main() {
                                     .spawn()
                                     .unwrap();
 
-            handle_outstream_async(process.stderr.take().unwrap(), stream.try_clone().unwrap());
-            handle_outstream_async(process.stdout.take().unwrap(), stream.try_clone().unwrap());
-            let handle = handle_instream_async(stream, process.stdin.take().unwrap());
+            let handle1 = handle_outstream_async(process.stderr.take().unwrap(), stream.try_clone().unwrap());
+            let handle2 = handle_outstream_async(process.stdout.take().unwrap(), stream.try_clone().unwrap());
+            let handle = handle_instream_async(stream.try_clone().unwrap(), process.stdin.take().unwrap());
             let _ = handle.join();
+            let _ = stream.shutdown(Shutdown::Both);
+            let _ = handle1.join();
+            let _ = handle2.join();
             println!("Client disconnected");
         }
     } else {
