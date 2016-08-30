@@ -13,13 +13,13 @@ fn relay_stream_async<F: Read + std::marker::Send + 'static, T: Write + std::mar
         loop {
             match from.read(&mut buffer) { //read some
                 Ok(amount_read) => {
-                    if amount_read == 0 { return; }
+                    if amount_read == 0 { return; } //stream must be closed
                     match to.write_all(&buffer[..amount_read]) { //successfully read, echo it to [to]
                         Ok(_) => to.flush().is_err(), //successfully echo'd, flush [to]
-                        Err(_) => { return; }
+                        Err(_) => { return; } //stream must be closed
                     };
                 },
-                Err(_) => { return; }
+                Err(_) => { return; } //stream must be closed
             };
         }
     })
