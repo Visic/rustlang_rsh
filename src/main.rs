@@ -57,8 +57,21 @@ fn main() {
             println!("Client disconnected");
         }
     } else {
-        let addr: SocketAddr = args[1].parse().unwrap();
-        let stream = TcpStream::connect(addr).unwrap();
+        let addr: SocketAddr = match args[1].parse() {
+            Ok(addr) => addr,
+            Err(_) => {
+                println!("Invalid ip address");
+                return;
+            }
+        };
+
+        let stream = match TcpStream::connect(addr) {
+            Ok(stream) => stream,
+            Err(err) => {
+                println!("Could not establish connection: {}", err);
+                return;
+            }
+        };
 
         relay_stream_async(io::stdin(), stream.try_clone().unwrap());
         let handle = relay_stream_async(stream, io::stdout());
