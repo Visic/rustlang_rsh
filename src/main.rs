@@ -63,5 +63,6 @@ fn main() {
         relay_stream_async(io::stdin(), stream.try_clone().unwrap());
         let handle = relay_stream_async(stream, io::stdout());
         let _ = handle.join();
+        println!("Disconnected");
     }
 }
