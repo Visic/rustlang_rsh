@@ -11,20 +11,16 @@ fn handle_outstream_async<F: Read + std::marker::Send + 'static, T: Write + std:
     thread::spawn(move || {
         let mut buffer: [u8; 256] = [0; 256];
         loop {
-            let finish = match from.read(&mut buffer) { //read some
+            match from.read(&mut buffer) { //read some
                 Ok(amount_read) => {
-                    if amount_read > 0 { 
-                        match to.write_all(&buffer[..amount_read]) { //successfully read, echo it to [to]
-                            Ok(_) => to.flush().is_err(), //successfully echo'd, flush [to]
-                            Err(_) => true,
-                        }
-                    } else {
-                        true
-                    }
+                    if amount_read == 0 { return; }
+                    match to.write_all(&buffer[..amount_read]) { //successfully read, echo it to [to]
+                        Ok(_) => to.flush().is_err(), //successfully echo'd, flush [to]
+                        Err(_) => { return; }
+                    };
                 },
-                Err(_) => true
+                Err(_) => { return; }
             };
-            if finish { break; } //break if any stage failed
         }
     })
 }
@@ -33,20 +29,16 @@ fn handle_instream_async<F: Read + std::marker::Send + 'static, T: Write + std::
     thread::spawn(move || {
         let mut buffer: [u8; 256] = [0; 256];
         loop {
-            let finish = match from.read(&mut buffer) { //read some
+            match from.read(&mut buffer) { //read some
                 Ok(amount_read) => { 
-                    if amount_read > 0 {
-                        match to.write_all(&buffer[..amount_read]) { //successfully read, echo it to [to]
-                            Ok(_) => to.flush().is_err(), //successfully echo'd, flush [to]
-                            Err(_) => true
-                        }
-                    } else {
-                        true
-                    }
+                    if amount_read == 0 { return; }
+                    match to.write_all(&buffer[..amount_read]) { //successfully read, echo it to [to]
+                        Ok(_) => to.flush().is_err(), //successfully echo'd, flush [to]
+                        Err(_) => { return; }
+                    };
                 },
-                Err(_) => true
+                Err(_) => { return; }
             };
-            if finish { break; }
         }
     })
 }
