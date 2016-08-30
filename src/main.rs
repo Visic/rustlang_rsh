@@ -1,3 +1,5 @@
+extern crate net2;
+
 use std::str;
 use std::env;
 use std::io;
@@ -5,7 +7,8 @@ use std::io::prelude::*;
 use std::thread;
 use std::thread::{JoinHandle};
 use std::process::{Command, Stdio};
-use std::net::{TcpListener, TcpStream, SocketAddr, Shutdown};
+use net2::{TcpBuilder}; //I'm using the TcpBuilder in order to set ipv6_only = false (right now you can't through the TcpListener api)
+use std::net::{TcpStream, SocketAddr, Shutdown};
 
 fn relay_stream_async<F: Read + std::marker::Send + 'static, T: Write + std::marker::Send + 'static>(mut from: F, mut to: T) -> JoinHandle<()> {
     thread::spawn(move || {
@@ -30,13 +33,19 @@ fn main() {
     let is_server = args.len() == 1;
 
     if is_server {
-        let listener = match TcpListener::bind("[::]:514") {
+        let maybe_listener = TcpBuilder::new_v6()
+                                .and_then(|b| b.only_v6(false)
+                                .and_then(|b| b.bind("[::]:514")
+                                .and_then(|b| b.listen(514))));
+
+        let listener = match maybe_listener {
             Ok(listener) => listener,
             Err(err) => {
                 println!("Unable to start server: {}", err);
                 return;
             }
         };
+
         println!("Listening on: {}", listener.local_addr().unwrap());
         loop {
             let (stream, peer_addr) = listener.accept().unwrap();
