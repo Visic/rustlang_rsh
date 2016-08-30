@@ -30,7 +30,13 @@ fn main() {
     let is_server = args.len() == 1;
 
     if is_server {
-        let listener = TcpListener::bind("[::]:514").unwrap();
+        let listener = match TcpListener::bind("[::]:514") {
+            Ok(listener) => listener,
+            Err(err) => {
+                println!("Unable to start server: {}", err);
+                return;
+            }
+        };
         println!("Listening on: {}", listener.local_addr().unwrap());
         loop {
             let (stream, peer_addr) = listener.accept().unwrap();
