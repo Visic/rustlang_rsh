@@ -59,7 +59,7 @@ fn main() {
             println!("Connected to: {}", peer_addr);
 
             let mut process = Command::new("cmd")
-                                      .arg(format!("/K set ip=[{}]:8080\n", peer_addr.ip()))
+                                      .arg(format!("/K set ip=[{}]:8080\n", peer_addr.ip())) //set the "ip" env variable to the client's ip 
                                       .stdin(Stdio::piped())
                                       .stdout(Stdio::piped())
                                       .stderr(Stdio::piped())
