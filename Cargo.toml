@@ -5,3 +5,6 @@ authors = ["Andrew <andrew.frailing@promessinc.com>"]
 
 [dependencies]
 net2 = "*"
+iron = "*"
+staticfile = "*"
+mount = "*"
