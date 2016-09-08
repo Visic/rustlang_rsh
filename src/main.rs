@@ -1,11 +1,7 @@
 extern crate net2;
-extern crate iron;
-extern crate staticfile;
-extern crate mount;
 
 use std::str;
 use std::env;
-use std::path::{Path};
 use std::io;
 use std::io::prelude::*;
 use std::thread;
@@ -13,9 +9,6 @@ use std::thread::{JoinHandle};
 use std::process::{Command, Stdio};
 use std::net::{TcpStream, SocketAddr, Shutdown};
 use net2::{TcpBuilder}; //I'm using the TcpBuilder in order to set ipv6_only = false (right now you can't through the TcpListener api)
-use iron::Iron;
-use staticfile::Static;
-use mount::Mount;
 
 fn relay_stream_async<F: Read + std::marker::Send + 'static, T: Write + std::marker::Send + 'static>(mut from: F, mut to: T) -> JoinHandle<()> {
     thread::spawn(move || {
@@ -81,7 +74,7 @@ fn main() {
                 return;
             }
         };
-
+        
         let stream = match TcpStream::connect(addr) {
             Ok(stream) => stream,
             Err(err) => {
@@ -91,12 +84,6 @@ fn main() {
         };
         
         println!("Connected");
-
-        thread::spawn(|| {
-            let mut mount = Mount::new();
-            mount.mount("/", Static::new(Path::new("")));
-            let _ = Iron::new(mount).http("[::]:8080").unwrap();
-        });
 
         relay_stream_async(io::stdin(), stream.try_clone().unwrap());
         let handle = relay_stream_async(stream, io::stdout());
