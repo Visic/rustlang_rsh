@@ -81,9 +81,10 @@ fn main() {
             let (mut stream, peer_addr) = listener.accept().unwrap();
             let command = retrieve_command(stream.try_clone().unwrap());
             
-            if command.len() > 0 {
+            if command.len() > 0 { //non-interactive mode
                 let process = Command::new("cmd")
-                                          .arg(format!("/c {}", command))
+                                          .arg("/c")
+                                          .arg(command)
                                           .stdin(Stdio::piped())
                                           .stdout(Stdio::piped())
                                           .stderr(Stdio::piped())
@@ -96,7 +97,7 @@ fn main() {
                 let _ = stream.write_all(&output.stderr);
                 let _ = stream.flush();
                 let _ = stream.shutdown(Shutdown::Both);
-            } else {
+            } else { //interactive mode
                 println!("Connected to: {}", peer_addr);
                 let mut process = Command::new("cmd")
                                           .arg("/Q") //turn off the echo
@@ -131,12 +132,12 @@ fn main() {
             }
         };
         
-        if args.len() > 2 {
+        if args.len() > 2 { //non-interactive mode
             send_command(stream.try_clone().unwrap(), &args[2..].join(" "));
             
             let handle = relay_stream_async(stream, io::stdout());
             let _ = handle.join();
-        } else {
+        } else { //interactive mode
             send_command(stream.try_clone().unwrap(), "");
             
             relay_stream_async(io::stdin(), stream.try_clone().unwrap());
